@@ -4,11 +4,14 @@ import (
 	"context"
 	"exmonit/storage"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"sync"
 	"time"
 )
+
+const updateDurationMetric = "update_duration"
 
 type Conf struct {
 	Pairs          []Pair        `yaml:"pairs"`
@@ -34,10 +37,25 @@ type Updater struct {
 	pairs    []Pair
 	crawlers []Crawler
 	interval time.Duration
+	metrics  metrics
+}
+
+type metrics struct {
+	duration *prometheus.SummaryVec
 }
 
 func NewUpdater(storage *storage.Storage, pairs []Pair, interval time.Duration) *Updater {
 	client := &http.Client{Timeout: 5 * time.Second}
+	m := metrics{
+		duration: prometheus.NewSummaryVec(
+			prometheus.SummaryOpts{
+				Name:       updateDurationMetric,
+				Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+			},
+			[]string{"exchange"},
+		),
+	}
+	prometheus.MustRegister(m.duration)
 	return &Updater{
 		storage: storage,
 		pairs:   pairs,
@@ -46,6 +64,7 @@ func NewUpdater(storage *storage.Storage, pairs []Pair, interval time.Duration) 
 			&exmo{httpClient: client},
 		},
 		interval: interval,
+		metrics:  m,
 	}
 }
 
@@ -59,8 +78,15 @@ func (u *Updater) Run(ctx context.Context) {
 		wg.Add(len(u.crawlers))
 		for _, c := range u.crawlers {
 			go func(c Crawler) {
-				logger := log.WithField("exchange", c.Exchange())
 				defer wg.Done()
+
+				start := time.Now()
+				defer func() {
+					duration := time.Since(start)
+					u.metrics.duration.WithLabelValues(c.Exchange()).Observe(duration.Seconds())
+				}()
+
+				logger := log.WithField("exchange", c.Exchange())
 				logger.Info("crawling started")
 				res, err := c.Crawl(ctx, u.pairs)
 				if err != nil {

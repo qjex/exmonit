@@ -34,16 +34,18 @@ type Server struct {
 
 func (s *Server) Serve() {
 	router := chi.NewRouter()
-	router.Use(middleware.Throttle(1000), middleware.Timeout(60*time.Second))
 	s.httpServer = &http.Server{
 		Addr:              ":8080",
 		Handler:           router,
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      30 * time.Second,
 	}
+
+	router.Use(middleware.Throttle(1000), middleware.Timeout(60*time.Second))
 	router.Use(middleware.Heartbeat("/status"))
 	router.Use(NewRequestLogger(log.StandardLogger()))
 	router.Get("/get_rates", s.getRates)
+
 	err := s.httpServer.ListenAndServe()
 	log.Warningf("http server exited with %v", err)
 }
@@ -56,6 +58,7 @@ func (s *Server) Close() {
 func (s *Server) getRates(w http.ResponseWriter, r *http.Request) {
 	saved, err := s.Storage.FindAll()
 	if err != nil {
+		log.WithField("method", "getRates").Error(err)
 		render.Status(r, http.StatusInternalServerError)
 		return
 	}

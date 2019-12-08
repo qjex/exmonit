@@ -41,11 +41,14 @@ func main() {
 		Database: cfg.Database,
 	})
 
+	metricsServer := api.MetricsServer{}
+
 	server := api.Server{
 		Conf:    conf,
 		Storage: s,
 	}
 	go server.Serve()
+	go metricsServer.Serve()
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -55,6 +58,7 @@ func main() {
 		<-stop
 		log.Debug("SIGTERM caught")
 		server.Close()
+		metricsServer.Close()
 		cancel()
 	}()
 

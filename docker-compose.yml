@@ -8,7 +8,7 @@ services:
     env_file: .env
     volumes:
       - /srv/postgres:/var/lib/postgresql/data
-      - ${PWD}/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
   exmonit:
     depends_on:
       - "db"
@@ -21,8 +21,18 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: exmonit
+    hostname: exmonit
     env_file: .env
     volumes:
-      - /srv/exmonit:/srv
+      - ./configs/config.yaml:/srv/config.yaml
     ports:
       - "8088:8080"
+  prometheus:
+    depends_on:
+      - "exmonit"
+    image: prom/prometheus:v2.14.0
+    container_name: exmonit_prom
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9099:9090"
