@@ -22,6 +22,10 @@ func (e *binance) Crawl(ctx context.Context, pairs []Pair) (map[Pair]float64, er
 	res := make(map[Pair]float64)
 
 	for _, pair := range pairs {
+		logger := log.WithFields(log.Fields{
+			"exchange": e.Exchange(),
+			"pair":     pair.String(),
+		})
 		url := fmt.Sprintf("https://api.binance.com/api/v3/avgPrice?symbol=%s%s", pair.From, pair.To)
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if err != nil {
@@ -30,26 +34,26 @@ func (e *binance) Crawl(ctx context.Context, pairs []Pair) (map[Pair]float64, er
 
 		data, err := getJson(e.httpClient, req)
 		if err != nil {
-			log.Error(err)
+			logger.Error(err)
 			continue
 		}
 
 		select {
 		case <-ctx.Done():
-			log.Debug("crawling Binance stopped")
+			logger.Debug("crawling stopped by context cancellation")
 			return nil, ctx.Err()
 		default:
 		}
 
 		if _, ok := data["code"]; ok {
-			log.Errorf("api error: %v", data)
+			logger.Errorf("api error: %v", data)
 			continue
 		}
 
 		if price, ok := data["price"].(string); ok {
 			p, err := strconv.ParseFloat(price, 64)
 			if err != nil {
-				log.Errorf("price can't be parsed as float")
+				logger.Error("price can't be parsed as float")
 			}
 			res[pair] = p
 		}

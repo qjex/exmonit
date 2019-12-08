@@ -42,6 +42,7 @@ func (s *Server) Serve() {
 		WriteTimeout:      30 * time.Second,
 	}
 	router.Use(middleware.Heartbeat("/status"))
+	router.Use(NewRequestLogger(log.StandardLogger()))
 	router.Get("/get_rates", s.getRates)
 	err := s.httpServer.ListenAndServe()
 	log.Warningf("http server exited with %v", err)

@@ -12,6 +12,11 @@ services:
   exmonit:
     depends_on:
       - "db"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
     build:
       context: .
       dockerfile: Dockerfile

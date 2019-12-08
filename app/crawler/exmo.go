@@ -38,19 +38,23 @@ func (e *exmo) Crawl(ctx context.Context, pairs []Pair) (map[Pair]float64, error
 
 	res := make(map[Pair]float64)
 	for _, pair := range pairs {
+		logger := log.WithFields(log.Fields{
+			"exchange": e.Exchange(),
+			"pair":     pair.String(),
+		})
 		pairData, ok := data[pair.exmoFormat()].(map[string]interface{})
 		if !ok {
-			log.Errorf("unexpected format for pair=%s", pair.String())
+			logger.Error("unexpected format")
 			continue
 		}
 		sellPrice, ok := pairData["sell_price"].(string)
 		if !ok {
-			log.Errorf("sell_price not found for pair=%s", pair.String())
+			logger.Error("sell_price not found")
 			continue
 		}
 		price, err := strconv.ParseFloat(sellPrice, 64)
 		if err != nil {
-			log.Errorf("sell_price can't be parsed: %v", err)
+			logger.Errorf("sell_price can't be parsed: %v", err)
 			continue
 		}
 		res[pair] = price

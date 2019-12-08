@@ -59,14 +59,15 @@ func (u *Updater) Run(ctx context.Context) {
 		wg.Add(len(u.crawlers))
 		for _, c := range u.crawlers {
 			go func(c Crawler) {
+				logger := log.WithField("exchange", c.Exchange())
 				defer wg.Done()
-				log.Infof("starting crawling %s", c.Exchange())
+				logger.Info("crawling started")
 				res, err := c.Crawl(ctx, u.pairs)
 				if err != nil {
-					log.Errorf("crawling for %s failed: %v", c.Exchange(), err)
+					logger.Errorf("crawling failed: %v", err)
 					return
 				}
-				log.Infof("crawling %s finished", c.Exchange())
+				logger.Info("crawling finished")
 
 				select {
 				case <-ctx.Done():
@@ -101,10 +102,15 @@ func (u *Updater) store(exchange string, res map[Pair]float64) {
 			Updated:  time.Now(),
 		}
 		err := u.storage.SaveOrUpdate(&rate)
+		logger := log.WithFields(log.Fields{
+			"pair":     rate.Pair,
+			"exchange": rate.Exchange,
+			"rate":     rate.Rate,
+		})
 		if err != nil {
-			log.Errorf("error saving pair=%s,exchange=%s,rate=%f, %v", rate.Pair, rate.Exchange, rate.Rate, err)
+			logger.Errorf("error saving: %v", err)
 			continue
 		}
-		log.Infof("pair=%s,exchange=%s,rate=%f saved", rate.Pair, rate.Exchange, rate.Rate)
+		logger.Info("saved successfully")
 	}
 }
