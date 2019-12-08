@@ -1,6 +1,5 @@
 # exmonit
-The service periodically updates currency pairs exchange rates and exposes data with API
-
+The service periodically updates currency pairs exchange rates and exposes data with API.
 ## Install
 
 Use provided `docker-compose.yml` and change `.env` file.
@@ -17,3 +16,6 @@ Following metrics are published to Prometheus:
 `update_duration` duration of update cycle with label for each exchange
 
 HTTP endpoint `/status` could be used for API server health checks
+
+## Possible improvements
+Responses could be cached (but should they?), 
