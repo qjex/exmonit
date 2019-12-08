@@ -24,7 +24,7 @@ services:
     hostname: exmonit
     env_file: .env
     volumes:
-      - ./configs/config.yaml:/srv/config.yaml
+      - ./configs/config.yml:/srv/config.yml
     ports:
       - "8088:8080"
   prometheus:
