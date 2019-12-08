@@ -1,0 +1,6 @@
+update: 1m
+pairs:
+  - from: BTC
+    to: USDT
+  - from: BTC
+    to: RUB

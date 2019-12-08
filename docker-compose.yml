@@ -1,0 +1,23 @@
+version: '3.0'
+
+services:
+  db:
+    image: postgres:9.6-alpine
+    container_name: exmonit_db
+    hostname: exmonit_db
+    env_file: .env
+    volumes:
+      - /srv/postgres:/var/lib/postgresql/data
+      - ${PWD}/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+  exmonit:
+    depends_on:
+      - "db"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: exmonit
+    env_file: .env
+    volumes:
+      - /srv/exmonit:/srv
+    ports:
+      - "8088:8080"
